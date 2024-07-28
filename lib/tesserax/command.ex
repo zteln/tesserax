@@ -1,178 +1,143 @@
 defmodule Tesserax.Command do
   @moduledoc """
-  Builds a command to pass to Tesserax.
+  Builds a command containing information about Tesseract and which image to read.
+
+  ## Examples
+      
+      command = Tesserax.Command.make_command(
+                  image: File.read("path/to/image"), 
+                  languages: ["eng", "hin"], 
+                  tessdata: "path/to/tessdata/dir",
+                  config: "path/to/config/file",
+                  psm: psm_value,
+                  oem: oem_value
+                )
+
+      Tesserax.Command.image(command)
+      #=> <<...>>
+
+      Tesserax.Command.languages(command)
+      #=> "eng+hin"
+
+      Tesserax.Command.tessdata(command)
+      #=> "path/to/tessdata/dir"
+
+      Tesserax.Command.config(command)
+      #=> "path/to/config/file"
+
+      Tesserax.Command.psm(command)
+      #=> psm_value
+
+      Tesserax.Command.oem(command)
+      #=> oem_value
   """
   defstruct [
+    :image,
+    :languages,
+    :tessdata,
+    :config,
     :psm,
-    :oem,
-    :dpi,
-    :log_level,
-    :tessdata_dir,
-    :user_words,
-    :user_patterns,
-    :config_file,
-    config_variables: [],
-    language: [],
-    image_path: "-",
-    output_path: "-",
-    list_languages: false
+    :oem
   ]
 
-  @type t :: %__MODULE__{}
+  @type t :: %__MODULE__{
+          image: binary(),
+          languages: String.t(),
+          tessdata: String.t(),
+          config: String.t(),
+          psm: integer(),
+          oem: integer()
+        }
 
-  @log_levels [:all, :trace, :debug, :info, :warn, :error, :fatal, :off]
+  @doc """
+  Builds a command with available options: `:image`, `:languages`, `:tessdata`, `:config`, `:psm`, `:oem`.
+    * `:image` is either the contents of an image (PNG format), or the path to an image.
+    * `:languages` is the languages that Tesseract should recognize with, either a list or a string.
+    * `:tessdata` is the path to tessdata dir.
+    * `:config` is the path to the config file.
+    * `:psm` is an integer representing Page Segmentation Mode in Tesseract.
+    * `:oem` is an integer representing Ocr Engine Mode in Tesseract.
+  Ignores invalid options.
 
-  @spec new() :: t()
-  def new() do
-    %__MODULE__{}
+  ## Examples
+
+      Tesserax.Command.make_command(image: File.read!("path/to/image"), languages: ["eng", "hin"], tessdata: "path/to/tessdata/dir", config: "path/to/config/file", psm: 0, oem: 0)
+  """
+  @spec make_command(t(), keyword()) :: t()
+  def make_command(command \\ %__MODULE__{}, opts) do
+    opts
+    |> Keyword.take([:image, :languages, :tessdata, :config, :psm, :oem])
+    |> Enum.reduce(command, fn opt, command ->
+      case cast_opt(opt) do
+        {key, val} -> %{command | {key, val}}
+        :invalid_opt -> command
+      end
+    end)
   end
 
-  @spec put_image_path(t(), binary()) :: t()
-  def put_image_path(%__MODULE__{} = command, image_path) when is_binary(image_path) do
-    %{command | image_path: image_path}
+  defp cast_opt({:image, image} = opt) when is_binary(image), do: opt
+  defp cast_opt({:languages, languages}) when is_binary(languages), do: {:languages, languages}
+  defp cast_opt({:languages, languages}), do: {:languages, Enum.join(languages, "+")}
+  defp cast_opt({:tessdata, tessdata} = opt) when is_binary(tessdata), do: opt
+  defp cast_opt({:config, config} = opt) when is_binary(config), do: opt
+  defp cast_opt({:psm, psm} = opt) when is_integer(psm), do: opt
+  defp cast_opt({:oem, oem} = opt) when is_integer(oem), do: opt
+  defp cast_opt(_opt), do: :invalid_opt
+
+  @doc """
+  Fetches image field from the command.
+  """
+  @spec image(t()) :: binary()
+  def image(%__MODULE__{image: image}), do: image
+
+  @doc """
+  Fetches the languages from the command.
+  """
+  @spec languages(t()) :: String.t()
+  def languages(%__MODULE__{languages: languages}), do: languages
+
+  @doc """
+  Fetches the tessdata path from the command.
+  """
+  @spec tessdata(t()) :: String.t()
+  def tessdata(%__MODULE__{tessdata: tessdata}), do: tessdata
+
+  @doc """
+  Fetches the config file path from the command.
+  """
+  @spec config(t()) :: String.t()
+  def config(%__MODULE__{config: config}), do: config
+
+  @doc """
+  Fetches the psm value from the command.
+  """
+  @spec psm(t()) :: integer()
+  def psm(%__MODULE__{psm: psm}), do: psm
+
+  @doc """
+  Fetches the oem value from the command.
+  """
+  @spec oem(t()) :: integer()
+  def oem(%__MODULE__{oem: oem}), do: oem
+
+  @doc """
+  Fetches all values from a command.
+  """
+  @spec values(t()) :: list()
+  def values(%__MODULE__{} = command) do
+    command
+    |> Map.from_struct()
+    |> Map.to_list()
   end
 
-  @spec put_language(t(), binary() | list()) :: t()
-  def put_language(%__MODULE__{language: languages} = command, language)
-      when is_binary(language) do
-    %{command | language: [language | languages]}
-  end
-
-  def put_language(%__MODULE__{} = command, languages) when is_list(languages) do
-    languages
-    |> Enum.reverse()
-    |> Enum.reduce(command, &put_language(&2, &1))
-  end
-
-  @spec put_psm(t(), integer()) :: t()
-  def put_psm(%__MODULE__{} = command, psm) when is_integer(psm) do
-    %{command | psm: psm}
-  end
-
-  @spec put_oem(t(), integer()) :: t()
-  def put_oem(%__MODULE__{} = command, oem) when is_integer(oem) do
-    %{command | oem: oem}
-  end
-
-  @spec put_output_path(t(), binary()) :: t()
-  def put_output_path(%__MODULE__{} = command, output_path) when is_binary(output_path) do
-    %{command | output_path: output_path}
-  end
-
-  @spec put_log_level(t(), atom()) :: t()
-  def put_log_level(%__MODULE__{} = command, log_level) when log_level in @log_levels do
-    %{command | log_level: log_level}
-  end
-
-  @spec put_tessdata_dir(t(), binary()) :: t()
-  def put_tessdata_dir(%__MODULE__{} = command, tessdata_dir) when is_binary(tessdata_dir) do
-    %{command | tessdata_dir: tessdata_dir}
-  end
-
-  @spec put_user_words(t(), binary()) :: t()
-  def put_user_words(%__MODULE__{} = command, user_words) when is_binary(user_words) do
-    %{command | user_words: user_words}
-  end
-
-  @spec put_user_patterns(t(), binary()) :: t()
-  def put_user_patterns(%__MODULE__{} = command, user_patterns) when is_binary(user_patterns) do
-    %{command | user_patterns: user_patterns}
-  end
-
-  @spec put_config_variable(t(), atom(), binary()) :: t()
-  def put_config_variable(
-        %__MODULE__{config_variables: config_variables} = command,
-        type,
-        value
-      ) do
-    config_variables = Keyword.put(config_variables, type, value)
-    %{command | config_variables: config_variables}
-  end
-
-  @spec put_config_file(t(), binary()) :: t()
-  def put_config_file(%__MODULE__{} = command, config_file) when is_binary(config_file) do
-    %{command | config_file: config_file}
-  end
-
-  @spec list_languages(t()) :: t()
-  def list_languages(%__MODULE__{} = command) do
-    %{command | list_languages: true}
-  end
-
-  @spec convert_to_args(t()) :: list()
-  def convert_to_args(%__MODULE__{list_languages: true} = command) do
-    ["--list-langs"]
-    |> pass_tessdata_dir(command)
-  end
-
-  def convert_to_args(%__MODULE__{} = command) do
-    []
-    |> pass_config_file(command)
-    |> pass_log_level(command)
-    |> pass_oem(command)
-    |> pass_psm(command)
-    |> pass_tessdata_dir(command)
-    |> pass_config_variables(command)
-    |> pass_language(command)
-    |> pass_output_path(command)
-    |> pass_image_path(command)
-  end
-
-  defp pass_image_path(args, %{image_path: image_path}) do
-    [image_path | args]
-  end
-
-  defp pass_output_path(args, %{output_path: output_path}) do
-    [output_path | args]
-  end
-
-  defp pass_language(args, %{language: []}), do: args
-
-  defp pass_language(args, %{language: language}) do
-    ["-l", convert_language(language) | args]
-  end
-
-  defp pass_psm(args, %{psm: nil}), do: args
-
-  defp pass_psm(args, %{psm: psm}) do
-    ["--psm", to_string(psm) | args]
-  end
-
-  defp pass_oem(args, %{oem: nil}), do: args
-
-  defp pass_oem(args, %{oem: oem}) do
-    ["--oem", to_string(oem) | args]
-  end
-
-  defp pass_log_level(args, %{log_level: nil}), do: args
-
-  defp pass_log_level(args, %{log_level: log_level}) do
-    ["--loglevel", to_string(log_level) | args]
-  end
-
-  defp pass_tessdata_dir(args, %{tessdata_dir: nil}), do: args
-
-  defp pass_tessdata_dir(args, %{tessdata_dir: tessdata_dir}) do
-    ["--tessdata-dir", tessdata_dir | args]
-  end
-
-  defp pass_config_variables(args, %{config_variables: config_variables}) do
-    Enum.reduce(config_variables, args, &pass_config_variable(&2, &1))
-  end
-
-  defp pass_config_variable(args, {var, val}) do
-    ["-c", "#{to_string(var)}=#{val}" | args]
-  end
-
-  defp pass_config_file(args, %{config_file: nil}), do: args
-
-  defp pass_config_file(args, %{config_file: config_file}) do
-    [config_file | args]
-  end
-
-  defp convert_language([language]), do: language
-
-  defp convert_language([language | languages]) do
-    "#{language}+#{convert_language(languages)}"
+  @doc """
+  Prepares a command. Returns a map with non-`nil` values from the command.
+  """
+  @spec prepare_command(t()) :: map()
+  def prepare_command(command) do
+    command
+    |> values()
+    |> Enum.reject(&is_nil(elem(&1, 1)))
+    |> Enum.into(%{})
   end
 end

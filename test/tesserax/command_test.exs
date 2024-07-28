@@ -2,55 +2,40 @@ defmodule Tesserax.CommandTest do
   use ExUnit.Case, async: true
   alias Tesserax.Command
 
-  test "new/0" do
-    assert %Command{} = Command.new()
+  test "make_command/1/2" do
+    command =
+      Command.make_command(image: "image")
+      |> Command.make_command(languages: "language")
+      |> Command.make_command(tessdata: "tessdata")
+      |> Command.make_command(config: "config")
+      |> Command.make_command(psm: 0)
+      |> Command.make_command(oem: 0)
+
+    assert "image" == Command.image(command)
+    assert "language" == Command.languages(command)
+    assert "tessdata" == Command.tessdata(command)
+    assert "config" == Command.config(command)
+    assert 0 == Command.psm(command)
+    assert 0 == Command.oem(command)
   end
 
-  describe "convert_to_args/1" do
-    test "recognition command" do
-      command =
-        Command.new()
-        |> Command.put_image_path("image_path")
-        |> Command.put_output_path("output_path")
-        |> Command.put_language("lang1")
-        |> Command.put_language("lang2")
-        |> Command.put_oem(1)
-        |> Command.put_psm(2)
-        |> Command.put_log_level(:info)
-        |> Command.put_tessdata_dir("tessdata_dir")
-        |> Command.put_user_words("user_words")
-        |> Command.put_user_patterns("user_patterns")
-        |> Command.put_config_variable(:var1, "val1")
-        |> Command.put_config_variable(:var2, "val2")
-        |> Command.put_config_file("config_file")
+  test "prepare_command/1" do
+    command_with_image = Command.make_command(image: "image")
+    assert %{image: "image"} == Command.prepare_command(command_with_image)
 
-      assert command |> Command.convert_to_args() == [
-               "image_path",
-               "output_path",
-               "-l",
-               "lang2+lang1",
-               "-c",
-               "var1=val1",
-               "-c",
-               "var2=val2",
-               "--tessdata-dir",
-               "tessdata_dir",
-               "--psm",
-               "2",
-               "--oem",
-               "1",
-               "--loglevel",
-               "info",
-               "config_file"
-             ]
-    end
+    command_with_languages = Command.make_command(languages: "languages")
+    assert %{languages: "languages"} == Command.prepare_command(command_with_languages)
 
-    test "list languages" do
-      command =
-        Command.new()
-        |> Command.list_languages()
+    command_with_tessdata = Command.make_command(tessdata: "tessdata")
+    assert %{tessdata: "tessdata"} == Command.prepare_command(command_with_tessdata)
 
-      assert command |> Command.convert_to_args() == ["--list-langs"]
-    end
+    command_with_config = Command.make_command(config: "config")
+    assert %{config: "config"} == Command.prepare_command(command_with_config)
+
+    command_with_psm = Command.make_command(psm: 0)
+    assert %{psm: 0} == Command.prepare_command(command_with_psm)
+
+    command_with_oem = Command.make_command(oem: 0)
+    assert %{oem: 0} == Command.prepare_command(command_with_oem)
   end
 end

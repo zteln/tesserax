@@ -1,62 +1,56 @@
 defmodule Tesserax do
   @moduledoc """
-  A wrapper around Tesseract OCR command line program.
+  Execute commands against the Tesseract OCR Engine.
+  Able to either recognize text in images loaded in memory or by providing a path to the image.
   """
-  alias Tesserax.Command
-  require Logger
+  alias Tesserax.{Command, NIF}
 
-  @spec run(Command.t() | list()) ::
-          {:ok, term()} | {:error, :non_zero_exit_status}
-  @spec run(Command.t() | list(), fun()) ::
-          {:ok, term()} | {:error, :non_zero_exit_status}
-  def run(command_or_args, parser \\ &parse_data/1)
+  @doc """
+  Runs a command against the NIF with the image loaded in memory. Requires the image to be image/png format.
 
-  def run(%Command{} = command, parser) do
-    Command.convert_to_args(command)
-    |> run(parser)
+  ## Examples
+
+      {:ok, %{text: text, confidence: confidence}} = Tesserax.read_from_mem(command)
+  """
+  @spec read_from_mem(Command.t()) :: {:ok, map()} | {:error, atom()}
+  def read_from_mem(command) do
+    command
+    |> Command.prepare_command()
+    |> NIF.run_mem()
   end
 
-  def run(args, parser) when is_list(args) do
-    args
-    |> open_tesseract_port()
-    |> await_response()
-    |> handle_response(parser)
+  @doc """
+  Runs a command against the NIF with a path to image. 
+
+  ## Examples
+
+      {:ok, %{text: text, confidence: confidence}} = Tesserax.read_from_file(command)
+  """
+  @spec read_from_file(Command.t()) :: {:ok, map()} | {:error, atom()}
+  def read_from_file(%Command{} = command) do
+    command
+    |> Command.prepare_command()
+    |> NIF.run_file()
   end
 
-  defp handle_response(response, parser) do
-    case response do
-      {:ok, data} ->
-        {:ok, parser.(data)}
+  @doc """
+  Lists the languages available to tesseract via NIF.
+  Accepts path to tessdata (optional).
 
-      {:error, _exit_status} ->
-        {:error, :non_zero_exit_status}
-    end
+  ## Examples 
+
+      {:ok, languages} = Tesserax.list_languages()
+
+      {:ok, languages} = Tesserax.list_languages("/path/to/tessdata/dir/")
+  """
+  @spec list_languages(binary() | nil) :: {:ok, list()} | {:error, atom()}
+  def list_languages(tessdata \\ %{})
+
+  def list_languages(tessdata) when is_binary(tessdata) do
+    list_languages(%{tessdata: tessdata})
   end
 
-  defp open_tesseract_port(args) do
-    Port.open({:spawn_executable, tesseract_executable()}, [:binary, :exit_status, args: args])
+  def list_languages(tessdata) do
+    NIF.list_languages(tessdata)
   end
-
-  defp await_response(port, data \\ "") do
-    receive do
-      {^port, {:data, data}} ->
-        await_response(port, data)
-
-      {^port, {:exit_status, 0}} ->
-        {:ok, data}
-
-      {^port, {:exit_status, exit_status}} ->
-        Logger.error("Received exit status #{exit_status} from Tesseract OCR.")
-        {:error, exit_status}
-    end
-  end
-
-  defp parse_data(data) do
-    String.split(data, "\n", trim: true)
-  end
-
-  defp tesseract_executable,
-    do:
-      Application.get_env(:tesserax, :tesseract_path, System.find_executable("tesseract")) ||
-        raise("Tesseract OCR executable not found or provided")
 end
