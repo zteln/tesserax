@@ -10,7 +10,7 @@ defmodule Tesserax do
 
   ## Examples
 
-      {:ok, %{text: text, confidence: confidence}} = Tesserax.read_from_mem(command)
+      {:ok, text} = Tesserax.read_from_mem(command)
   """
   @spec read_from_mem(Command.t()) :: {:ok, binary()} | {:error, atom()}
   def read_from_mem(command) do
@@ -24,7 +24,7 @@ defmodule Tesserax do
 
   ## Examples
 
-      {:ok, %{text: text, confidence: confidence}} = Tesserax.read_from_file(command)
+      {:ok, text} = Tesserax.read_from_file(command)
   """
   @spec read_from_file(Command.t()) :: {:ok, binary()} | {:error, atom()}
   def read_from_file(%Command{} = command) do

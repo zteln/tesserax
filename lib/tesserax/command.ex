@@ -61,7 +61,14 @@ defmodule Tesserax.Command do
 
   ## Examples
 
-      Tesserax.Command.make_command(image: File.read!("path/to/image"), languages: ["eng", "hin"], tessdata: "path/to/tessdata/dir", config: "path/to/config/file", psm: 0, oem: 0)
+      Tesserax.Command.make_command(
+        image: File.read!("path/to/image"), 
+        languages: ["eng", "hin"], 
+        tessdata: "path/to/tessdata/dir", 
+        config: "path/to/config/file", 
+        psm: 0, 
+        oem: 0
+      )
   """
   @spec make_command(t(), keyword()) :: t()
   def make_command(command \\ %__MODULE__{}, opts) do
