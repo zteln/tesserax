@@ -1,10 +1,6 @@
-// #include <erl_nif.h>
-// #include <leptonica/allheaders.h>
-// #include <tesseract/capi.h>
-
-#include </opt/homebrew/Cellar/leptonica/1.84.1/include/leptonica/allheaders.h>
-#include </opt/homebrew/Cellar/tesseract/5.4.1/include/tesseract/capi.h>
-#include </usr/local/lib/erlang/erts-15.0/include/erl_nif.h>
+#include <erl_nif.h>
+#include <leptonica/allheaders.h>
+#include <tesseract/capi.h>
 
 #include <stdbool.h>
 #include <string.h>
