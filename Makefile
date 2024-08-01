@@ -25,11 +25,14 @@ endif
 
 all: priv/tesseract_api.so
 
-priv/tesseract_api.so: src/tesseract_api.c
+priv/tesseract_api.so: src/tesseract_api.c | priv
 	$(CC) $(CFLAGS) \
 		-o priv/tesseract_api.so \
 		src/tesseract_api.c \
 		-shared $(LDFLAGS)
+
+priv:
+	mkdir priv
 
 clean:
 	$(RM) priv/tesseract_api.so
