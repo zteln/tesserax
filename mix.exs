@@ -4,7 +4,7 @@ defmodule Tesserax.MixProject do
   def project do
     [
       app: :tesserax,
-      version: "0.1.1",
+      version: "0.1.2",
       elixir: "~> 1.14",
       compilers: [:elixir_make] ++ Mix.compilers(),
       start_permanent: Mix.env() == :prod,
@@ -26,7 +26,7 @@ defmodule Tesserax.MixProject do
   defp package do
     [
       name: "tesserax",
-      files: ~w(lib priv .formatter.exs mix.exs README.md LICENSE src Makefile),
+      files: ~w(lib .formatter.exs mix.exs README.md LICENSE src Makefile),
       licenses: ["MIT"],
       links: %{"GitHub" => "https://github.com/zteln/tesserax"}
     ]

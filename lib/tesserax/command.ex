@@ -76,7 +76,7 @@ defmodule Tesserax.Command do
     |> Keyword.take([:image, :languages, :tessdata, :config, :psm, :oem])
     |> Enum.reduce(command, fn opt, command ->
       case cast_opt(opt) do
-        {key, val} -> %{command | {key, val}}
+        {key, val} -> Map.replace(command, key, val)
         :invalid_opt -> command
       end
     end)
