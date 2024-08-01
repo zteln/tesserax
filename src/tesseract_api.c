@@ -34,7 +34,7 @@ static void erlbinarycopy(char *text, ErlNifBinary *bin) {
 static void bufcopy(ErlNifEnv *env, char *buf, ERL_NIF_TERM term) {
   ErlNifBinary bin;
   enif_inspect_binary(env, term, &bin);
-  strncpy(buf, (const char *)bin.data, bin.size + 1);
+  strncpy(buf, (const char *)bin.data, bin.size);
 }
 
 static ERL_NIF_TERM recognize(ErlNifEnv *env, ERL_NIF_TERM command,
