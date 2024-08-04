@@ -4,7 +4,7 @@ defmodule Tesserax.MixProject do
   def project do
     [
       app: :tesserax,
-      version: "0.1.4",
+      version: "0.1.5",
       elixir: "~> 1.14",
       compilers: [:elixir_make] ++ Mix.compilers(),
       start_permanent: Mix.env() == :prod,

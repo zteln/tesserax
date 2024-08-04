@@ -129,7 +129,7 @@ static PIX *pix_read_mem(ErlNifEnv *env, ERL_NIF_TERM input) {
 }
 
 static PIX *pix_read_file(ErlNifEnv *env, ERL_NIF_TERM input) {
-  char buf[MAX_BUF_LEN];
+  char buf[MAX_BUF_LEN] = {'\0'};
   bufcopy(env, buf, input);
   return pixRead(buf);
 }
